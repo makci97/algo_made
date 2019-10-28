@@ -10,13 +10,15 @@ public:
     {
         _buffer = new T[_capacity];
     }
+    ~Queue();
     
-    bool empty();
+    bool empty() const;
     T pop_front();
     void push_back(T value);
-    void realloc();
 
 private:
+    void _realloc();
+    
     size_t _size;
     size_t _capacity;
     size_t _head;
@@ -25,8 +27,14 @@ private:
     T *_buffer;
 };
 
+template <typename T>
+Queue<T>::~Queue()
+{
+    delete[] _buffer;
+}
+
 template<typename T>
-bool Queue<T>::empty()
+bool Queue<T>::empty() const
 {
     return _size == 0;
 }
@@ -46,7 +54,7 @@ template<typename T>
 void Queue<T>::push_back(T value)
 {
     if(_size == _capacity)
-        realloc();
+        _realloc();
     
     // add new value
     _buffer[_tail] = value;
@@ -55,7 +63,7 @@ void Queue<T>::push_back(T value)
 }
 
 template<typename T>
-void Queue<T>::realloc()
+void Queue<T>::_realloc()
 {
     // move data to new space
     T *new_buffer = new T[_capacity * 2];
