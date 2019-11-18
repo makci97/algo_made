@@ -1,1 +1,3 @@
 add_subdirectory(1_2_Deque_with_dynamic_buffer)
+add_subdirectory(1_1_Queue_with_dynamic_buffer)
+add_subdirectory(2_4_Moving_max)
