@@ -1,0 +1,1 @@
+add_executable(8_1 main.cpp)

@@ -4,4 +4,3 @@ project(algo_made)
 set(CMAKE_CXX_STANDARD 14)
 
 add_subdirectory(HW)
-add_subdirectory(lessons)
