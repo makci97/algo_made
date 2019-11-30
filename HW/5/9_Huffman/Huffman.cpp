@@ -246,13 +246,16 @@ void Encode(IInputStream &original, IOutputStream &compressed)
     char2bits.reserve(counter.size());
     tree->make_char2bits(char2bits, cur_bits);
     
-    // encode n_leafs
     BitsWriter encoded;
-    encoded.WriteByte(byte((counter.size() >> 8u) % 256));
-    encoded.WriteByte(byte(counter.size() % 256));
     
     // encode tree
     auto code_chars_pair = tree->get_coded_tree();
+    // encode sizes
+    for (unsigned int i = 0; i < 8; ++i)
+    {
+        // n_leafs
+        encoded.WriteByte(byte((counter.size() >> (8u * (7u - i))) % 256));
+    }
     for (unsigned int i = 0; i < 8; ++i)
     {
         // dfs_code_len
@@ -290,17 +293,13 @@ void Decode(IInputStream &compressed, IOutputStream &original)
         if (!compressed.Read(read_byte))
             break;
         
-        if (i == 0)
+        if (i < 8)
         {
-            n_leafs = static_cast<unsigned long int>(read_byte);
-            continue;
-        }
-        if (i == 1)
-        {
+            // dfs_code_len
             n_leafs = static_cast<unsigned long int>(n_leafs << 8u) | static_cast<unsigned long int>(read_byte);
             continue;
         }
-        if (i >= 2 && i < 10)
+        if (i >= 8 && i < 16)
         {
             // dfs_code_len
             dfs_code_len = static_cast<unsigned long int>(dfs_code_len << 8u) | static_cast<unsigned long int>(read_byte);
