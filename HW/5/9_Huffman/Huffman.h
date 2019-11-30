@@ -1,19 +1,19 @@
 #ifndef ALGO_MADE_HUFFMAN_H
 #define ALGO_MADE_HUFFMAN_H
 
-typedef unsigned char t_byte;
+typedef unsigned char byte;
 
 struct IInputStream
 {
     // Возвращает false, если поток закончился
-    virtual bool Read(t_byte& value) = 0;
+    virtual bool Read(byte& value) = 0;
     
     virtual ~IInputStream() = default;
 };
 
 struct IOutputStream
 {
-    virtual void Write(t_byte value) = 0;
+    virtual void Write(byte value) = 0;
     
     virtual ~IOutputStream() = default;
 };

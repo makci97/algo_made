@@ -5,30 +5,26 @@
 #include <algorithm>
 #include "Huffman.h"
 
-typedef unsigned char t_byte;
-
 
 class BitsWriter
 {
 public:
     void WriteBit(bool bit);
     
-    void WriteByte(t_byte byte);
+    void WriteByte(byte byte_value);
     
-    void WriteInt(unsigned int num);
-    
-    std::vector<t_byte> GetResult();
+    std::vector<byte> GetResult();
 
 private:
-    std::vector<t_byte> buffer_;
-    t_byte accumulator_ = 0;
+    std::vector<byte> buffer_;
+    byte accumulator_ = 0;
     unsigned int bits_count_ = 0;
 };
 
 void BitsWriter::WriteBit(bool bit)
 {
     // Ставим бит в аккумулятор на нужное место
-    accumulator_ |= static_cast<t_byte>(bit) << bits_count_;
+    accumulator_ |= static_cast<byte>(static_cast<byte>(bit) << bits_count_);
     ++bits_count_;
     if (bits_count_ == 8)
     {
@@ -38,43 +34,28 @@ void BitsWriter::WriteBit(bool bit)
     }
 }
 
-void BitsWriter::WriteByte(t_byte byte)
+void BitsWriter::WriteByte(byte byte_value)
 {
     if (bits_count_ == 0)
     {
-        buffer_.push_back(byte);
+        buffer_.push_back(byte_value);
     }
     else
     {
-        accumulator_ |= byte << bits_count_;
+        accumulator_ |= static_cast<byte>(byte_value << bits_count_);
         buffer_.push_back(accumulator_);
-        accumulator_ = byte >> (8 - bits_count_);
+        accumulator_ = byte_value >> (8 - bits_count_);
     }
 }
 
-void BitsWriter::WriteInt(unsigned int num)
-{
-    std::deque<bool> bin_num;
-    while(num != 0)
-    {
-        bin_num.push_back(bool(num % 2));
-        num /= 2;
-    }
-    while (bin_num.size() < 32)
-    {
-        bin_num.push_front(false);
-    }
-    buffer_.insert(buffer_.end(), bin_num.begin(), bin_num.end());
-}
-
-std::vector<t_byte> BitsWriter::GetResult()
+std::vector<byte> BitsWriter::GetResult()
 {
     if (bits_count_ != 0)
     {
         // Добавляем в буфер аккумулятор, если в нем что-то есть.
         buffer_.push_back(accumulator_);
     }
-    buffer_.push_back(static_cast<t_byte>(bits_count_));
+    buffer_.push_back(static_cast<byte>(bits_count_));
     return std::move(buffer_);
 }
 
@@ -82,18 +63,17 @@ std::vector<t_byte> BitsWriter::GetResult()
 class Tree
 {
 public:
-    explicit Tree(int weight=0, t_byte leaf_char='\0'):\
+    explicit Tree(int weight=0, byte leaf_char='\0'):\
         _weight(weight), _leaf_char(leaf_char), _left(nullptr), _right(nullptr) {}
-    Tree(std::vector<bool>& dfs_code, std::vector<t_byte>& leaf_chars);
+    Tree(std::vector<bool>& dfs_code, std::vector<byte>& leaf_chars);
     ~Tree(){ delete _left; delete _right; }
     
     Tree* merge(Tree* other);
-    std::pair<std::vector<bool>, std::vector<t_byte> > get_coded_tree() const;
+    std::pair<std::vector<bool>, std::vector<byte> > get_coded_tree() const;
     void make_char2bits(
-            std::unordered_map<t_byte, std::vector<bool> >& char2bits,
+            std::unordered_map<byte, std::vector<bool> >& char2bits,
             std::vector<bool>& cur_bits
     ) const;
-    int get_weight() { return _weight; }
     
     bool operator <(const Tree& other) { return _weight < other._weight; }
     
@@ -101,14 +81,14 @@ public:
 
 private:
     int _weight;
-    t_byte _leaf_char;
+    byte _leaf_char;
     Tree* _left;
     Tree* _right;
     
-    static void _add_child_code(const Tree* child, std::vector<bool>& dfs_code, std::vector<t_byte>& leaf_chars);
+    static void _add_child_code(const Tree* child, std::vector<bool>& dfs_code, std::vector<byte>& leaf_chars);
 };
 
-Tree::Tree(std::vector<bool>& dfs_code, std::vector<t_byte>& leaf_chars):
+Tree::Tree(std::vector<bool>& dfs_code, std::vector<byte>& leaf_chars):
     _weight(-1), _leaf_char('\0'), _left(nullptr), _right(nullptr)
 {
     // reverse dfs
@@ -155,11 +135,11 @@ Tree* Tree::merge(Tree* other)
     return merged_tree;
 }
 
-std::pair<std::vector<bool>, std::vector<t_byte> > Tree::get_coded_tree() const
+std::pair<std::vector<bool>, std::vector<byte> > Tree::get_coded_tree() const
 {
     // down == 0, up == 1
     std::vector<bool> dfs_code;
-    std::vector<t_byte> leaf_chars;
+    std::vector<byte> leaf_chars;
     if (_left != nullptr)
         _add_child_code(_left, dfs_code, leaf_chars);
     if (_right != nullptr)
@@ -171,7 +151,7 @@ std::pair<std::vector<bool>, std::vector<t_byte> > Tree::get_coded_tree() const
 }
 
 void Tree::make_char2bits(
-        std::unordered_map<t_byte, std::vector<bool> >& char2bits,
+        std::unordered_map<byte, std::vector<bool> >& char2bits,
         std::vector<bool>& cur_bits
 ) const
 {
@@ -191,7 +171,7 @@ void Tree::make_char2bits(
         char2bits[_leaf_char] = cur_bits;
 }
 
-void Tree::_add_child_code(const Tree* child, std::vector<bool>& dfs_code, std::vector<t_byte>& leaf_chars)
+void Tree::_add_child_code(const Tree* child, std::vector<bool>& dfs_code, std::vector<byte>& leaf_chars)
 {
     dfs_code.push_back(false);
     
@@ -224,27 +204,18 @@ Tree* decode(bool command, Tree* root, Tree* cur_node, IOutputStream& output)
     
     if (cur_node -> _left == nullptr && cur_node -> _right == nullptr)
     {
-        t_byte decoded = cur_node -> _leaf_char;
+        byte decoded = cur_node -> _leaf_char;
         output.Write(decoded);
         return root;
     }
     return cur_node;
 }
 
-static void copyStream(IInputStream &input, IOutputStream &output)
-{
-    t_byte value;
-    while (input.Read(value))
-    {
-        output.Write(value);
-    }
-}
-
 void Encode(IInputStream &original, IOutputStream &compressed)
 {
-    t_byte read_byte;
-    std::unordered_map<t_byte, int> counter;
-    std::vector<t_byte> msg;
+    byte read_byte;
+    std::unordered_map<byte, int> counter;
+    std::vector<byte> msg;
     while (original.Read(read_byte))
     {
         msg.push_back(read_byte);
@@ -271,22 +242,26 @@ void Encode(IInputStream &original, IOutputStream &compressed)
     auto tree = queue.back();
     
     // char2bits
-    std::unordered_map<t_byte, std::vector<bool> > char2bits;
+    std::unordered_map<byte, std::vector<bool> > char2bits;
     std::vector<bool> cur_bits;
     char2bits.reserve(counter.size());
     tree->make_char2bits(char2bits, cur_bits);
     
     // encode n_leafs
     BitsWriter encoded;
-    encoded.WriteByte(t_byte(counter.size())); // < 256
+    encoded.WriteByte(byte(counter.size() >> 8u));
+    encoded.WriteByte(byte(counter.size()));
     
     // encode tree
     auto code_chars_pair = tree->get_coded_tree();
-    encoded.WriteByte(t_byte((code_chars_pair.first.size() % 256u) >> 256u));    // dfs_code_len
-    encoded.WriteByte(t_byte(code_chars_pair.first.size() / 256u));    // dfs_code_len
-    for (auto byte: code_chars_pair.second)
+    for (unsigned int i = 0; i < 4; ++i)
     {
-        encoded.WriteByte(byte);
+        // dfs_code_len
+        encoded.WriteByte(byte(code_chars_pair.first.size() >> (8u * (3u - i))));
+    }
+    for (auto byte_value: code_chars_pair.second)
+    {
+        encoded.WriteByte(byte_value);
     }
     for (auto bit: code_chars_pair.first)
     {
@@ -300,15 +275,15 @@ void Encode(IInputStream &original, IOutputStream &compressed)
         
     // write encoded
     auto result = encoded.GetResult();
-    for (auto byte: result)
-        compressed.Write(byte);
+    for (auto byte_value: result)
+        compressed.Write(byte_value);
 }
 
 void Decode(IInputStream &compressed, IOutputStream &original)
 {
     std::vector<bool> bits;
     bool bit;
-    t_byte read_byte;
+    byte read_byte;
     unsigned int n_leafs = 0, dfs_code_len = 0;
     // read bits
     for (int i = 0; ; ++i)
@@ -323,12 +298,14 @@ void Decode(IInputStream &compressed, IOutputStream &original)
         }
         if (i == 1)
         {
-            dfs_code_len = static_cast<int>(read_byte);
+            n_leafs = (n_leafs << 8u) | static_cast<int>(read_byte);
             continue;
         }
-        if (i == 2)
+    
+        if (i >= 2 && i < 6)
         {
-            dfs_code_len = (dfs_code_len << 256u) | static_cast<int>(read_byte);
+            // dfs_code_len
+            dfs_code_len = (dfs_code_len << 8u) | static_cast<int>(read_byte);
             continue;
         }
         for (unsigned int j = 0; j < 8; ++j)
@@ -346,16 +323,16 @@ void Decode(IInputStream &compressed, IOutputStream &original)
     std::reverse(std::begin(bits), std::end(bits));
     
     // read leaf_chars
-    std::vector<t_byte> leaf_chars;
+    std::vector<byte> leaf_chars;
     for (int i = 0; i < n_leafs; ++i)
     {
-        t_byte byte = 0;
+        byte byte_value = 0;
         for (unsigned int j = 0; j < 8; ++j)
         {
-            byte = byte | (static_cast<t_byte>(bits.back()) << j);
+            byte_value = byte_value | (static_cast<byte>(bits.back()) << j);
             bits.pop_back();
         }
-        leaf_chars.push_back(byte);
+        leaf_chars.push_back(byte_value);
     }
     
     // read dfs_code
@@ -376,6 +353,4 @@ void Decode(IInputStream &compressed, IOutputStream &original)
     {
         cur_node = decode(command, &tree, cur_node, original);
     }
-    
-    bits.size();
 }
