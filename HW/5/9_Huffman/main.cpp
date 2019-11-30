@@ -140,7 +140,7 @@ int main()
 //    delete out_stream_decode;
 //
     
-    std::ifstream in_stream("input.jpg", std::ios::binary|std::ios::ate);
+    std::ifstream in_stream("input1.txt", std::ios::binary|std::ios::ate);
     std::vector<char> file_c = ReadAllBytes(in_stream);
     std::vector<byte> file;
     for (char c: file_c)

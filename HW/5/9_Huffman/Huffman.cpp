@@ -1,6 +1,5 @@
 #include <vector>
 #include <unordered_map>
-#include <queue>
 #include <cassert>
 #include <algorithm>
 #include "Huffman.h"
@@ -249,15 +248,15 @@ void Encode(IInputStream &original, IOutputStream &compressed)
     
     // encode n_leafs
     BitsWriter encoded;
-    encoded.WriteByte(byte(counter.size() >> 8u));
-    encoded.WriteByte(byte(counter.size()));
+    encoded.WriteByte(byte((counter.size() >> 8u) % 256));
+    encoded.WriteByte(byte(counter.size() % 256));
     
     // encode tree
     auto code_chars_pair = tree->get_coded_tree();
-    for (unsigned int i = 0; i < 4; ++i)
+    for (unsigned int i = 0; i < 8; ++i)
     {
         // dfs_code_len
-        encoded.WriteByte(byte(code_chars_pair.first.size() >> (8u * (3u - i))));
+        encoded.WriteByte(byte((code_chars_pair.first.size() >> (8u * (7u - i))) % 256));
     }
     for (auto byte_value: code_chars_pair.second)
     {
@@ -284,7 +283,7 @@ void Decode(IInputStream &compressed, IOutputStream &original)
     std::vector<bool> bits;
     bool bit;
     byte read_byte;
-    unsigned int n_leafs = 0, dfs_code_len = 0;
+    unsigned long int n_leafs = 0, dfs_code_len = 0;
     // read bits
     for (int i = 0; ; ++i)
     {
@@ -293,24 +292,23 @@ void Decode(IInputStream &compressed, IOutputStream &original)
         
         if (i == 0)
         {
-            n_leafs = static_cast<int>(read_byte);
+            n_leafs = static_cast<unsigned long int>(read_byte);
             continue;
         }
         if (i == 1)
         {
-            n_leafs = (n_leafs << 8u) | static_cast<int>(read_byte);
+            n_leafs = static_cast<unsigned long int>(n_leafs << 8u) | static_cast<unsigned long int>(read_byte);
             continue;
         }
-    
-        if (i >= 2 && i < 6)
+        if (i >= 2 && i < 10)
         {
             // dfs_code_len
-            dfs_code_len = (dfs_code_len << 8u) | static_cast<int>(read_byte);
+            dfs_code_len = static_cast<unsigned long int>(dfs_code_len << 8u) | static_cast<unsigned long int>(read_byte);
             continue;
         }
         for (unsigned int j = 0; j < 8; ++j)
         {
-            bit = ((read_byte >> j) & 0x01u);
+            bit = bool(static_cast<byte>(read_byte >> j) & 0x01u);
             bits.push_back(bit);
         }
     }
@@ -324,12 +322,12 @@ void Decode(IInputStream &compressed, IOutputStream &original)
     
     // read leaf_chars
     std::vector<byte> leaf_chars;
-    for (int i = 0; i < n_leafs; ++i)
+    for (unsigned long int i = 0; i < n_leafs; ++i)
     {
         byte byte_value = 0;
         for (unsigned int j = 0; j < 8; ++j)
         {
-            byte_value = byte_value | (static_cast<byte>(bits.back()) << j);
+            byte_value |= static_cast<byte>(static_cast<byte>(bits.back()) << j);
             bits.pop_back();
         }
         leaf_chars.push_back(byte_value);
@@ -337,7 +335,7 @@ void Decode(IInputStream &compressed, IOutputStream &original)
     
     // read dfs_code
     std::vector<bool> dfs_code;
-    for (unsigned int i = 0; i < dfs_code_len; ++i)
+    for (unsigned long int i = 0; i < dfs_code_len; ++i)
     {
         dfs_code.push_back(bits.back());
         bits.pop_back();
