@@ -314,7 +314,10 @@ void Decode(IInputStream &compressed, IOutputStream &original)
     
     // remove trash in end
     int bits_count = static_cast<int>(read_byte);
-    bits.resize(bits.size() - 8 - (8 - bits_count));
+    if (bits_count == 0)
+        bits.resize(bits.size() - 8);
+    else
+        bits.resize(bits.size() - 8 - (8 - bits_count));
     
     // to read in right order
     std::reverse(std::begin(bits), std::end(bits));
