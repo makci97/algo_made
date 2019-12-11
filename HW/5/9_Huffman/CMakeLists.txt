@@ -1,1 +1,1 @@
-add_executable(9 main.cpp Huffman.cpp Huffman.h)
+add_executable(9 Huffman.cpp Huffman.h main.cpp)

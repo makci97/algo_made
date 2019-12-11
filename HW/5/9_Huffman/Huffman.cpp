@@ -279,6 +279,8 @@ void Encode(IInputStream &original, IOutputStream &compressed)
     auto result = encoded.GetResult();
     for (auto byte_value: result)
         compressed.Write(byte_value);
+    
+    delete tree;
 }
 
 void Decode(IInputStream &compressed, IOutputStream &original)
